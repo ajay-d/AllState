@@ -85,6 +85,41 @@ for(i in names(all.cont.vars)) {
   cont.table <- bind_rows(cont.table, df)
 }
 
+cat.table.long <- NULL
+high.cat.vars <- cat.table %>%
+  filter(categories > 4) %>%
+  use_series(var)
+
+for(i in high.cat.vars) {
+  
+  var.count <- all.cat.vars %>%
+    count_(i, sort=TRUE)
+  
+  loss.var <- train %>%
+    group_by_(i) %>%
+    summarise(sd = sd(loss),
+              mean = mean(loss))
+  
+  var.table <- inner_join(var.count, loss.var)
+  
+  for(j in 1:nrow(var.count)) {
+    df <- data_frame(var = i,
+                     category = var.table[[j,i]],
+                     n = var.table[[j,'n']],
+                     mean.loss = var.table[[j,'mean']],
+                     sd = var.table[[j,'sd']])
+        
+    cat.table.long <- bind_rows(cat.table.long, df) %>%
+      filter(n > 1)
+  }
+  
+}
+
+cat.table.long %>%
+  group_by(var) %>%
+  summarise(sd = mean(sd)) %>%
+  arrange(sd)
+
 summary(train$loss)
 quantile(train$loss)
 
@@ -93,10 +128,15 @@ train <- train %>%
 
 summary(train$log.loss)
 
+sum(cat.table$categories)
+
 ggplot(train) + 
   geom_histogram(aes(loss))
 
 ggplot(train) + 
   geom_histogram(aes(loss)) +
   scale_x_log10()
+
+ggplot(train) + 
+  geom_histogram(aes(log.loss), binwidth = .1)
 
