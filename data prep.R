@@ -6,6 +6,7 @@ library(tidyr)
 library(xgboost)
 library(ggplot2)
 library(lazyeval)
+library(magrittr)
 
 options(mc.cores = parallel::detectCores(),
         stringsAsFactors = FALSE,
@@ -46,6 +47,43 @@ for(i in names(all.cat.vars)) {
 }
 cat.table <- cat.table %>%
   arrange(desc(categories))
+
+all.cont.vars <- train %>%
+  select(starts_with('cont'))
+
+cont.table <- NULL
+for(i in names(all.cont.vars)) {
+  
+  #get highest category, and count
+  var.max <- all.cont.vars %>%
+    count_(i, sort=TRUE) %>%
+    filter(row_number()==1)
+  
+  dots <- list(interp(~mean(var), var = as.name(paste0(i))),
+               interp(~median(var), var = as.name(paste0(i))),
+               interp(~quantile(var, .01), var = as.name(paste0(i))),
+               interp(~quantile(var, .10), var = as.name(paste0(i))),
+               interp(~quantile(var, .90), var = as.name(paste0(i))),
+               interp(~quantile(var, .99), var = as.name(paste0(i))),
+               interp(~sd(var), var = as.name(paste0(i))))
+
+  var.summary <- all.cont.vars %>%
+    summarise_(.dots = setNames(dots, c("mean", "median", "q01", "q10", "q90", "q99", "sd")))
+  
+  #Count cardinality
+  df <- data_frame(var = i,
+                   mean = var.summary$mean,
+                   median = var.summary$median,
+                   mode = var.max[1,1] %>% as.numeric(),
+                   mode.n = var.max[1,2] %>% as.numeric(),
+                   sd = var.summary[1,'sd'] %>% as.numeric(),
+                   q01 = var.summary[1,'q01'] %>% as.numeric(),
+                   q10 = var.summary[1,'q10'] %>% as.numeric(),
+                   q90 = var.summary[1,'q90'] %>% as.numeric(),
+                   q99 = var.summary[1,'q99'] %>% as.numeric())
+  
+  cont.table <- bind_rows(cont.table, df)
+}
 
 summary(train$loss)
 quantile(train$loss)
