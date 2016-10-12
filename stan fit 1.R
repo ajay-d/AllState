@@ -3,9 +3,9 @@ rm(list=ls(all=TRUE))
 library(readr)
 library(dplyr)
 library(tidyr)
+library(rstan)
 library(ggplot2)
 library(magrittr)
-library(rstan)
 
 options(mc.cores = parallel::detectCores(),
         stringsAsFactors = FALSE,
@@ -28,7 +28,7 @@ train.20 <- train %>%
   anti_join(train.80 %>%
               select(id))
 
-
+#using 1 cat var, with only two levels
 dat <- list('N_obs' = nrow(train.80),
             'x_cont' = train.80 %>% select(starts_with('cont')),
             'D' = 2,
