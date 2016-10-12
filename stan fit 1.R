@@ -5,6 +5,7 @@ library(dplyr)
 library(tidyr)
 library(ggplot2)
 library(magrittr)
+library(rstan)
 
 options(mc.cores = parallel::detectCores(),
         stringsAsFactors = FALSE,
@@ -16,29 +17,25 @@ test <- read_csv("data/test.csv.zip")
 
 set.seed(666)
 
+train.80 %>% count(cat6)
+train.20 %>% count(cat6)
+
 train.80 <- train %>%
-  sample_frac(.8)
+  sample_frac(.8) %>%
+  mutate(cat6_num = c('A'=1, 'B'=2)[cat6])
 
 train.20 <- train %>%
   anti_join(train.80 %>%
               select(id))
 
-train.80 %>% count(cat109)
-train.20 %>% count(cat109)
 
-dat <- list('N' = nrow(train.80),
-            'D' = length(sort(unique(train.sample$level_8))), #number of stratification levels
-            
-            'y' = train.80$loss,
-            
-            'll' = train.sample$level_8, #level indicator
-            'covar' = features,
-            "x_m2" = train.sample$Ret_MinusTwo,
-            "x_m1" = train.sample$Ret_MinusOne,
-            "x_intra" = train.sample$return.intra.day
-)
+dat <- list('N_obs' = nrow(train.80),
+            'x_cont' = train.80 %>% select(starts_with('cont')),
+            'D' = 2,
+            'x_cat' = train.80 %>% use_series(cat6_num),
+            'loss' = train.80$loss)
 
-fit <- stan("model_simple1.stan",
-            iter=5000, warmup=3000,
-            thin=2, chains=3, seed=252014,
+fit <- stan("model 1.stan",
+            iter=4000, warmup=2000,
+            chains=4, seed=666,
             data = dat)
