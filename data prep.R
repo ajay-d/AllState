@@ -123,6 +123,11 @@ cat.table.long %>%
   summarise(sd = mean(sd)) %>%
   arrange(sd)
 
+cat.table.long %>%
+  group_by(var) %>%
+  summarise(cv = mean(cv)) %>%
+  arrange(cv)
+
 #start with just the simple two var categories
 cat.2 <- cat.table.long %>%
   group_by(var) %>%
