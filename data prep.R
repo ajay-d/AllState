@@ -87,7 +87,8 @@ for(i in names(all.cont.vars)) {
 
 cat.table.long <- NULL
 high.cat.vars <- cat.table %>%
-  filter(categories > 4) %>%
+  #filter(categories > 4) %>%
+  #filter(categories > 2) %>%
   use_series(var)
 
 for(i in high.cat.vars) {
@@ -107,7 +108,8 @@ for(i in high.cat.vars) {
                      category = var.table[[j,i]],
                      n = var.table[[j,'n']],
                      mean.loss = var.table[[j,'mean']],
-                     sd = var.table[[j,'sd']])
+                     sd = var.table[[j,'sd']],
+                     cv = mean.loss/sd)
         
     cat.table.long <- bind_rows(cat.table.long, df) %>%
       filter(n > 1)
@@ -119,6 +121,14 @@ cat.table.long %>%
   group_by(var) %>%
   summarise(sd = mean(sd)) %>%
   arrange(sd)
+
+#start with just the simple two var categories
+cat.2 <- cat.table.long %>%
+  group_by(var) %>%
+  mutate(n.cat = n(),
+         cv.mean = mean(cv)) %>%
+  filter(n.cat == 2) %>%
+  arrange(cv.mean)
 
 summary(train$loss)
 quantile(train$loss)
