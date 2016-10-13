@@ -28,7 +28,9 @@ for(i in names(all.cat.vars)) {
     count_(i, sort=TRUE)
   
   df <- data_frame(var = i,
-                   categories = nrow(var.card))
+                   categories = nrow(var.card)) %>%
+    mutate(binary = R.utils::intToBin(categories),
+           binary.length = nchar(binary))
   
   cat.table <- bind_rows(cat.table, df)
 }
@@ -40,6 +42,75 @@ cat.2.vars <- cat.table %>%
 train.recode <- train %>%
   mutate_at(vars(one_of(cat.2.vars)), funs(c("A" = 0, "B" = 1)[.]))
 
+cat.2plus.vars<- cat.table %>%
+  filter(categories == 20) %>%
+  use_series(var)
+
+cat.table.long <- NULL
+for(i in cat.2plus.vars) {
+  
+  train.var <- train %>%
+    group_by_(i) %>%
+    summarise(sd = sd(loss),
+              mean = mean(loss),
+              n.train = n()) %>%
+    mutate(pct.train = n.train/sum(n.train),
+           cv = mean/sd)
+  
+  test.var <- test %>%
+    group_by_(i) %>%
+    summarise(n.test = n()) %>%
+    mutate(pct.test = n.test/sum(n.test))
+  
+  var.table <- inner_join(train.var, test.var) %>%
+    rename_(value=i) %>%
+    mutate(var = i)
+  
+  cat.table.long <- bind_rows(cat.table.long, var.table)
+}
+
+cat.table.long <- cat.table.long %>%
+  group_by(var) %>%
+  arrange(var, desc(pct.train)) %>%
+  mutate(test.flag = ifelse(abs(pct.train - pct.test) > .001, 1, 0),
+         #start at 0
+         cat.number = row_number()-1,
+         cat.number = ifelse(pct.train < .001, NA, cat.number)) %>%
+  fill(cat.number)
+  
+for(i in cat.2plus.vars) {
+  
+  n.new.vars <- cat.table.long %>%
+    filter(var==i) %>%
+    summarise(cat.number = max(cat.number)) %>%
+    use_series(cat.number)
+  
+  len.binary <- nchar(R.utils::intToBin(n.new.vars))
+  
+  col.names <- paste(i, 1:len.binary, sep='_')
+  col.values <- R.utils::intToBin(n.new.vars) %>% str_split('')
+  col.values[[1]]
+  
+  train.recode.long <- train.recode %>%
+    select_('id', i) %>%
+    rename_(value=i) %>%
+    inner_join(cat.table.long %>%
+                 ungroup %>%
+                 filter(var==i) %>%
+                 select(value, cat.number)) %>%
+    mutate(binary = R.utils::intToBin(cat.number)) %>%
+    mutate(binary2 = binary %>% str_split_fixed('', n=4) %>% as.character() %>% paste(collapse = "_"))
+    rowwise() %>%
+    mutate(binary = R.utils::intToBin(cat.number) %>% str_split('') %>% extract2(1) %>% paste(collapse = "_"))
+    
+    #rowwise() %>%
+    mutate(binary = binary %>% str_split('') %>% extract2(1) %>% paste(collapse = "_")) %>%
+    separate(binary, into=col.names, sep='_') %>%
+    select(-cat.number, -value) %>%
+    mutate_if(is.character, as.numeric)
+  
+}
+  
 ################################################################################
 #####GBM cont only#####
 
