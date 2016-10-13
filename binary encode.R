@@ -100,7 +100,7 @@ for(i in cat.2plus.vars) {
   col.values <- R.utils::intToBin(n.new.vars) %>% str_split('')
   col.values[[1]]
   
-  train_var_binary <- train.recode %>%
+  train.var <- train.recode %>%
     select_('id', i) %>%
     rename_(value=i) %>%
     inner_join(cat.table.long %>%
@@ -116,7 +116,7 @@ for(i in cat.2plus.vars) {
     select(-cat.number, -value) %>%
     mutate_if(is.character, as.numeric)
   
-  test_var_binary <- test.recode %>%
+  test.var <- test.recode %>%
     select_('id', i) %>%
     rename_(value=i) %>%
     inner_join(cat.table.long %>%
@@ -133,9 +133,9 @@ for(i in cat.2plus.vars) {
     mutate_if(is.character, as.numeric)  
   
   train.recode.binary <- train.recode.binary %>%
-    inner_join(train_var_binary)
+    inner_join(train.var)
   test.recode.binary <- test.recode.binary %>%
-    inner_join(test_var_binary)
+    inner_join(test.var)
   
 }
 

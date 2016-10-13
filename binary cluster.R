@@ -8,12 +8,12 @@ pb <- txtProgressBar(max=l, style=3)
 progress <- function(n) setTxtProgressBar(pb, n)
 opts <- list(progress=progress)
 
-train_var_binary <- foreach(id=1:l,
-                            .packages=c("dplyr", "tidyr", "magrittr", "stringr"),
-                            .verbose=FALSE,
-                            .combine=inner_join,
-                            .inorder=FALSE,
-                            .options.snow=opts) %dopar% {
+train.recode.binary <- foreach(id=1:l,
+                               .packages=c("dplyr", "tidyr", "magrittr", "stringr"),
+                               .verbose=FALSE,
+                               .combine=inner_join,
+                               .inorder=FALSE,
+                               .options.snow=opts) %dopar% {
            
             i <- cat.2plus.vars[id]
            
@@ -28,7 +28,7 @@ train_var_binary <- foreach(id=1:l,
             col.values <- R.utils::intToBin(n.new.vars) %>% str_split('')
             col.values[[1]]
             
-            train_var_binary <- train.recode %>%
+            train.var <- train.recode %>%
               select_('id', i) %>%
               rename_(value=i) %>%
               inner_join(cat.table.long %>%
@@ -44,7 +44,7 @@ train_var_binary <- foreach(id=1:l,
               select(-cat.number, -value) %>%
               mutate_if(is.character, as.numeric)
             
-            train_var_binary
+            train.var
                             }
 
 test.recode.binary <- foreach(id=1:l,
@@ -67,7 +67,7 @@ test.recode.binary <- foreach(id=1:l,
             col.values <- R.utils::intToBin(n.new.vars) %>% str_split('')
             col.values[[1]]
             
-            test_var_binary <- test.recode %>%
+            test.var <- test.recode %>%
               select_('id', i) %>%
               rename_(value=i) %>%
               inner_join(cat.table.long %>%
@@ -83,19 +83,25 @@ test.recode.binary <- foreach(id=1:l,
               select(-cat.number, -value) %>%
               mutate_if(is.character, as.numeric)
             
-            test_var_binary
+            test.var
                             }
 
 
 stopCluster(cl)
 
+train.binary <- train.recode %>%
+  select(id, one_of(cat.2.vars)) %>%
+  inner_join(train.recode.binary) %>%
+  inner_join(train %>%
+               select(id, starts_with('cont'))) %>%
+  inner_join(train %>%
+               select(id, loss))
 
-
-train.binary <- train %>% 
-  select(id)
-
-test.binary <- test %>% 
-  select(id)
+test.binary <- test.recode %>%
+  select(id, one_of(cat.2.vars)) %>%
+  inner_join(test.recode.binary) %>%
+  inner_join(test %>%
+               select(id, starts_with('cont')))
 
 train.file <- "train_recode.csv.gz"
 test.file <- "test_recode.csv.gz"
