@@ -7,6 +7,8 @@ library(xgboost)
 library(ggplot2)
 library(stringr)
 library(magrittr)
+library(doSNOW)
+library(foreach)
 
 options(stringsAsFactors = FALSE,
         scipen = 10)
@@ -41,9 +43,11 @@ cat.2.vars <- cat.table %>%
 
 train.recode <- train %>%
   mutate_at(vars(one_of(cat.2.vars)), funs(c("A" = 0, "B" = 1)[.]))
+test.recode <- test %>%
+  mutate_at(vars(one_of(cat.2.vars)), funs(c("A" = 0, "B" = 1)[.]))
 
 cat.2plus.vars<- cat.table %>%
-  filter(categories == 20) %>%
+  filter(categories > 2) %>%
   use_series(var)
 
 cat.table.long <- NULL
@@ -62,7 +66,7 @@ for(i in cat.2plus.vars) {
     summarise(n.test = n()) %>%
     mutate(pct.test = n.test/sum(n.test))
   
-  var.table <- inner_join(train.var, test.var) %>%
+  var.table <- full_join(train.var, test.var) %>%
     rename_(value=i) %>%
     mutate(var = i)
   
@@ -70,14 +74,19 @@ for(i in cat.2plus.vars) {
 }
 
 cat.table.long <- cat.table.long %>%
+  replace_na(list(n.test=0, n.train=0)) %>%
+  mutate(n.total = n.test + n.train) %>%
   group_by(var) %>%
-  arrange(var, desc(pct.train)) %>%
+  mutate(pct.total = n.total/sum(n.total)) %>%
+  arrange(var, desc(n.total)) %>%
   mutate(test.flag = ifelse(abs(pct.train - pct.test) > .001, 1, 0),
          #start at 0
          cat.number = row_number()-1,
-         cat.number = ifelse(pct.train < .001, NA, cat.number)) %>%
+         cat.number = ifelse(pct.total < .001, NA, cat.number)) %>%
   fill(cat.number)
-  
+
+train.recode.binary <- train %>% select(id)
+test.recode.binary <- test %>% select(id)
 for(i in cat.2plus.vars) {
   
   n.new.vars <- cat.table.long %>%
@@ -91,7 +100,7 @@ for(i in cat.2plus.vars) {
   col.values <- R.utils::intToBin(n.new.vars) %>% str_split('')
   col.values[[1]]
   
-  train.recode.long <- train.recode %>%
+  train_var_binary <- train.recode %>%
     select_('id', i) %>%
     rename_(value=i) %>%
     inner_join(cat.table.long %>%
@@ -99,18 +108,51 @@ for(i in cat.2plus.vars) {
                  filter(var==i) %>%
                  select(value, cat.number)) %>%
     mutate(binary = R.utils::intToBin(cat.number)) %>%
-    mutate(binary2 = binary %>% str_split_fixed('', n=4) %>% as.character() %>% paste(collapse = "_"))
     rowwise() %>%
-    mutate(binary = R.utils::intToBin(cat.number) %>% str_split('') %>% extract2(1) %>% paste(collapse = "_"))
-    
-    #rowwise() %>%
-    mutate(binary = binary %>% str_split('') %>% extract2(1) %>% paste(collapse = "_")) %>%
+    mutate(binary = binary %>% str_split_fixed('', n=len.binary) %>% as.character() %>% str_c(collapse='_')) %>%
+    #rowwise()
+    #mutate(binary = R.utils::intToBin(cat.number) %>% str_split('') %>% extract2(1) %>% paste(collapse = "_"))
     separate(binary, into=col.names, sep='_') %>%
     select(-cat.number, -value) %>%
     mutate_if(is.character, as.numeric)
   
-}
+  test_var_binary <- test.recode %>%
+    select_('id', i) %>%
+    rename_(value=i) %>%
+    inner_join(cat.table.long %>%
+                 ungroup %>%
+                 filter(var==i) %>%
+                 select(value, cat.number)) %>%
+    mutate(binary = R.utils::intToBin(cat.number)) %>%
+    rowwise() %>%
+    mutate(binary = binary %>% str_split_fixed('', n=len.binary) %>% as.character() %>% str_c(collapse='_')) %>%
+    #rowwise()
+    #mutate(binary = R.utils::intToBin(cat.number) %>% str_split('') %>% extract2(1) %>% paste(collapse = "_"))
+    separate(binary, into=col.names, sep='_') %>%
+    select(-cat.number, -value) %>%
+    mutate_if(is.character, as.numeric)  
   
+  train.recode.binary <- train.recode.binary %>%
+    inner_join(train_var_binary)
+  test.recode.binary <- test.recode.binary %>%
+    inner_join(test_var_binary)
+  
+}
+
+train.recode.binary <- train.recode %>%
+  select(id, one_of(cat.2.vars)) %>%
+  inner_join(train.recode.binary) %>%
+  inner_join(train %>%
+               select(id, starts_with('cont'))) %>%
+  inner_join(train %>%
+               select(id, loss))
+
+test.recode.binary <- test.recode %>%
+  select(id, one_of(cat.2.vars)) %>%
+  inner_join(test.recode.binary) %>%
+  inner_join(test %>%
+               select(id, starts_with('cont')))
+
 ################################################################################
 #####GBM cont only#####
 
