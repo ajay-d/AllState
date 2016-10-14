@@ -50,27 +50,29 @@ oos.y <- oos.data %>%
   use_series(loss)
 
 model.data <- model.data %>%
-  select(-id) %>%
+  select(-id, -loss) %>%
   as.matrix()
 
 oos.data <- oos.data %>%
-  select(-id) %>%
+  select(-id, -loss) %>%
   as.matrix()
 
 xgbtrain <- xgb.DMatrix(data=model.data, label=model.y)
 xgb.grid.log <- NULL
 
-for(s1 in c(.5, .8, .9, 1))
+#for(s1 in c(.5, .8, .9, 1))
   #for(s2 in c(.5, .8, .9, 1))
     #for(s3 in c(.5, .8, .9, 1))
       for(eta in c(.01, .02, .03, .05))
-        for(max_depth in c(8, 9, 10, 11, 12, 15))
+        for(max_depth in c(8, 9, 10, 11, 12))
           for(nrounds in c(250, 500, 750, 1000, 2000, 3000)) {
       
       set.seed(666)
+
+      s1 <- 1
+      s2 <- 1
+      s3 <- 1
       
-            s2 <- 1
-            s3 <- 1
       param <- list("objective" = "reg:linear",
                     "eval_metric" = "rmse",
                     "eval_metric" = "mae",
@@ -93,18 +95,33 @@ for(s1 in c(.5, .8, .9, 1))
         summarise(mae = mean(abs.error))
 
       
+      importance_matrix <- xgb.importance(colnames(xgbtrain), model = bst)
+      
       df <- data_frame(eta = eta,
                        max_depth = max_depth,
                        nrounds = nrounds,
                        subsample = s1,
                        colsample_bytree = s2,
                        colsample_bylevel = s3,
+                       
+                       importance.1 = importance_matrix$Feature[1],
+                       gain.1 = importance_matrix$Gain[1],
+                       
+                       importance.2 = importance_matrix$Feature[2],
+                       gain.2 = importance_matrix$Gain[2],
+                       
+                       importance.3 = importance_matrix$Feature[3],
+                       gain.3 = importance_matrix$Gain[3],
+
                        mae = pred$mae)
       
       xgb.grid.log <- bind_rows(xgb.grid.log, df)
       
       print(nrow(xgb.grid.log))
     }
+
+xgb.grid.log <- xgb.grid.log %>%
+  arrange(desc(mae))
 
 write.csv(xgb.grid.log, file='GridLogLossBinary.csv', row.names = FALSE)
 
