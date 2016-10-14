@@ -380,4 +380,3 @@ data_frame(oos.loss = oos.y,
   mutate(abs.error = abs(oos.loss-loss.pred)) %>%
   summarise(mae = mean(abs.error))
 
-

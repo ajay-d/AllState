@@ -103,6 +103,19 @@ test.binary <- test.recode %>%
   inner_join(test %>%
                select(id, starts_with('cont')))
 
+#order names the same
+ordered.names <- train.binary %>%
+  select(-id, -loss) %>%
+  names %>%
+  sort
+
+train.binary <- train.binary %>%
+  select(id, one_of(ordered.names), loss)
+
+test.binary <- test.binary %>%
+  select(id, one_of(ordered.names))
+
+
 train.file <- "train_recode.csv.gz"
 test.file <- "test_recode.csv.gz"
 
