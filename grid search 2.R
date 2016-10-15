@@ -60,21 +60,16 @@ oos.data <- oos.data %>%
 xgbtrain <- xgb.DMatrix(data=model.data, label=model.y)
 xgb.grid.log <- NULL
 
-#for(s1 in c(.5, .8, .9, 1))
-  #for(s2 in c(.5, .8, .9, 1))
-    #for(s3 in c(.5, .8, .9, 1))
+for(s1 in c(.5, .7, .8, .9, 1))
+  for(s2 in c(.5, .7, .8, .9, 1))
+    for(s3 in c(.9, 1))
       for(eta in c(.01, .02, .03, .05))
-        for(max_depth in c(8, 9, 10, 11, 12))
-          for(nrounds in c(250, 500, 750, 1000, 2000)) {
+        for(max_depth in c(8, 9, 10, 11))
+          for(nrounds in c(250, 500, 750, 1000)) {
       
       set.seed(666)
 
-      s1 <- 1
-      s2 <- 1
-      s3 <- 1
-      
       param <- list("objective" = "reg:linear",
-                    "eval_metric" = "rmse",
                     "eval_metric" = "mae",
                     "eta" = eta,
                     "subsample" = s1,
@@ -121,9 +116,9 @@ xgb.grid.log <- NULL
     }
 
 xgb.grid.log <- xgb.grid.log %>%
-  arrange(mae)
+  arrange(desc(mae))
 
-write.csv(xgb.grid.log, file='GridLogLossBinary.csv', row.names = FALSE)
+write.csv(xgb.grid.log, file='Grid2.csv', row.names = FALSE)
 
 
 
