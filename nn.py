@@ -20,7 +20,7 @@ data_train.drop(['id', 'loss'], axis=1, inplace=True)
 data_test.drop(['id', 'loss'], axis=1, inplace=True)
 
 model = Sequential()
-model.add(Dense(400, input_dim = xtrain.shape[1], init = 'he_normal'))
+model.add(Dense(400, input_dim = data_train.shape[1], init = 'he_normal'))
 model.add(PReLU())
 model.add(Dropout(0.4))
 model.add(Dense(200, init = 'he_normal'))
@@ -28,6 +28,8 @@ model.add(PReLU())
 model.add(Dropout(0.2))
 model.add(Dense(1, init = 'he_normal'))
 model.compile(loss = 'mae', optimizer = 'adadelta')
+
+model.fit(data_train.values, y_train, nb_epoch=50)
 
 model.add(Activation("relu"))
 model.add(Dense(output_dim=10))
