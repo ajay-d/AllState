@@ -107,19 +107,19 @@ train.level.1 <- data_frame(id = model.data$id,
 
 
 
-train.tsne <- Rtsne(as.matrix(model.data %>% select(-id, -loss)), 
-                    check_duplicates = FALSE, 
-                    pca = TRUE, 
-                    perplexity = 30, 
-                    theta = 0.5, 
-                    dims = 3)
-
-oos.tsne <- Rtsne(as.matrix(oos.data %>% select(-id, -loss)), 
-                  check_duplicates = FALSE, 
-                  pca = TRUE, 
-                  perplexity = 30, 
-                  theta = 0.5, 
-                  dims = 3)
+# train.tsne <- Rtsne(as.matrix(model.data %>% select(-id, -loss)), 
+#                     check_duplicates = FALSE, 
+#                     pca = TRUE, 
+#                     perplexity = 30, 
+#                     theta = 0.5, 
+#                     dims = 3)
+# 
+# oos.tsne <- Rtsne(as.matrix(oos.data %>% select(-id, -loss)), 
+#                   check_duplicates = FALSE, 
+#                   pca = TRUE, 
+#                   perplexity = 30, 
+#                   theta = 0.5, 
+#                   dims = 3)
 
 model.y <- model.data %>% use_series(loss)  
 
@@ -151,6 +151,6 @@ oos.test <- oos.data %>%
 
 data_frame(oos.loss = oos.data$loss,
            loss.pred = predict(bst.1, oos.test)) %>%
-  mutate(abs.error = abs(exp(oos.loss)-exp(loss.pred))) %>%
+  mutate(abs.error = abs(oos.loss-exp(loss.pred))) %>%
   summarise(mae = mean(abs.error))
 
