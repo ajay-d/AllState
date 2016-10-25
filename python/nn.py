@@ -24,6 +24,20 @@ y_train = data_train['loss'].ravel()
 data_train.drop(['id', 'loss'], axis=1, inplace=True)
 data_test.drop(['id', 'loss'], axis=1, inplace=True)
 
+bags = 5
+nepochs = 55
+def bag_model(X, Y, nn_model):
+    sample_index = np.arange(X.shape[0])
+    pred = np.zeros(Y.shape[0])
+    for j in range(bags):
+        np.random.shuffle(sample_index)
+        x_bag = X[sample_index]
+        y_bag = Y[sample_index]
+        nn_model.fit(x_bag, y_bag, nb_epoch=nepochs)
+        pred += model.predict(data_test.values)
+        
+bag_model(data_train.values, y_train, model, 3, 3)
+
 model = Sequential()
 model.add(Dense(400, input_dim = data_train.shape[1], init = 'he_normal'))
 model.add(PReLU())
@@ -35,10 +49,6 @@ model.add(Dense(1, init = 'he_normal'))
 model.compile(loss = 'mae', optimizer = 'adadelta')
 
 model.fit(data_train.values, y_train, nb_epoch=50)
-
-model.add(Activation("relu"))
-model.add(Dense(output_dim=10))
-model.add(Activation('tanh'))
 
 model.compile(optimizer='rmsprop', loss = 'mae')
 model.compile(optimizer='adadelta', loss = 'mae')
@@ -53,17 +63,6 @@ model = Sequential()
 model.add(Dense(10, input_dim=data_train.shape[1], init='uniform', activation='relu'))
 model.add(Dense(1, init='normal'))
 model.compile(optimizer='adagrad', loss='mae')
-model.fit(data_train.values, y_train, nb_epoch=5)
-
-model = Sequential()
-model.add(Dense(64, input_dim=data_train.shape[1], init='uniform'))
-model.add(Activation('tanh'))
-model.add(Dropout(0.5))
-model.add(Dense(64, init='uniform'))
-model.add(Activation('tanh'))
-model.add(Dropout(0.2))
-model.add(Dense(1, init = 'he_normal'))
-model.compile(optimizer='adadelta', loss='mae')
 model.fit(data_train.values, y_train, nb_epoch=5)
 
 pred_1 = model.predict(data_test.values)
