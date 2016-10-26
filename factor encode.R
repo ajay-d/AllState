@@ -14,8 +14,25 @@ options(stringsAsFactors = FALSE,
 train <- read_csv("data/train.csv.zip")
 test <- read_csv("data/test.csv.zip")
 
+###############################################
+#First ran through and used the cat vars that came up in the variable importance matrix from GBM
+train <- train %>%
+  mutate(new_cat1 = paste0(cat80, cat101),
+         new_cat2 = paste0(cat79, cat101),
+         new_cat3 = paste0(cat79, cat80),
+         new_cat4 = paste0(cat79, cat80, cat101))
+
+test <- test %>%
+  mutate(new_cat1 = paste0(cat80, cat101),
+         new_cat2 = paste0(cat79, cat101),
+         new_cat3 = paste0(cat79, cat80),
+         new_cat4 = paste0(cat79, cat80, cat101))
+
+###############################################
+
 all.cat.vars <- train %>%
-  select(starts_with('cat'))
+  select(contains('cat'))
+  #select(starts_with('cat'))
 
 cat.table <- NULL
 for(i in names(all.cat.vars)) {
@@ -58,11 +75,13 @@ for(i in names(all.cat.vars)) {
   
 
 cat.table.long %>%
+  filter(n.train > 1, n.test > 1) %>%
   group_by(var) %>%
   summarise(sd = mean(sd)) %>%
   arrange(sd)
 
 cat.table.long %>%
+  filter(n.train > 1, n.test > 1) %>%
   group_by(var) %>%
   summarise(cv = mean(cv)) %>%
   arrange(cv)
@@ -78,7 +97,6 @@ cat.table.long <- cat.table.long %>%
          cat.number = row_number()-1,
          cat.number = ifelse(pct.total < .001, NA, cat.number)) %>%
   fill(cat.number)
-
 
 train.recode.factor <- train %>% select(id)
 test.recode.factor <- test %>% select(id)
@@ -133,8 +151,8 @@ train.recode.factor <- train.recode.factor %>%
 test.recode.factor <- test.recode.factor %>%
   select(id, one_of(ordered.names))
 
-train.file <- "train_recode_factor.csv.gz"
-test.file <- "test_recode_factor.csv.gz"
+train.file <- "data/train_recode_factor.csv.gz"
+test.file <- "data/test_recode_factor.csv.gz"
 
 write.csv(train.recode.factor, gzfile(train.file), row.names=FALSE)
 write.csv(test.recode.factor, gzfile(test.file), row.names=FALSE)

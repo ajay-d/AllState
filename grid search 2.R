@@ -116,7 +116,7 @@ for(s1 in c(.5, .7, .8, .9, 1))
     }
 
 xgb.grid.log <- xgb.grid.log %>%
-  arrange(desc(mae))
+  arrange(mae)
 
 write.csv(xgb.grid.log, file='Grid2.csv', row.names = FALSE)
 
