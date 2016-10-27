@@ -184,8 +184,8 @@ nn_test <- read_csv("python/nn_preds_test_5epochs.csv")
 nn_test <- read_csv("python/submission_keras.csv")
 nn_test <- read_csv("python/nn_preds_quick.csv")
 
-nn_test1 <- read_csv("python/nn_preds_test2_250epochs.csv")
-nn_test2 <- read_csv("python/nn_preds_test_250epochs.csv")
+nn_test1 <- read_csv("python/nn_preds_test-norm1_250epochs.csv")
+nn_test2 <- read_csv("python/nn_preds_test-norm3_250epochs.csv")
 
 trees_a <- read_csv("python/trees_preds_a.csv")
 trees_b <- read_csv("python/trees_preds_b.csv")
