@@ -34,6 +34,135 @@ all.cat.vars <- train %>%
   select(contains('cat'))
   #select(starts_with('cat'))
 
+#setdiff(names(all.cat.vars), c('cat79', 'cat80', 'cat101'))
+v1 <- setdiff(names(all.cat.vars), c('cat79'))
+
+new.cat.train <- train %>% select(id)
+new.cat.test <- test %>% select(id)
+i <- 1
+for(j in v1) {
+  new_var_train <- train %>%
+    select_('id', j, 'cat79') %>%
+    setNames(c('id', 'old_var', 'cat79')) %>%
+    mutate(new_cat = paste0(old_var, cat79)) %>%
+    select(id, new_cat) %>%
+    setNames(c('id', paste0('new_cat', i)))
+  
+  new_var_test <- test %>%
+    select_('id', j, 'cat79') %>%
+    setNames(c('id', 'old_var', 'cat79')) %>%
+    mutate(new_cat = paste0(old_var, cat79)) %>%
+    select(id, new_cat) %>%
+    setNames(c('id', paste0('new_cat', i)))
+  
+  new.cat.train <- new.cat.train %>%
+    inner_join(new_var_train)
+  new.cat.test <- new.cat.test %>%
+    inner_join(new_var_test)
+  
+  i = i + 1
+}
+
+train.new <- train %>%
+  select(id, contains('cat')) %>%
+  inner_join(new.cat.train)
+test.new <- test %>%
+  select(id, contains('cat')) %>%
+  inner_join(new.cat.test)
+
+#all.cat.vars <- train.new %>%
+#  select(contains('cat'))
+all.cat.vars <- train %>%
+  select(contains('cat'))
+
+#setdiff(names(all.cat.vars), c('cat79', 'cat80', 'cat101'))
+v2 <- setdiff(names(all.cat.vars), c('cat80'))
+
+new.cat.train <- train %>% select(id)
+new.cat.test <- test %>% select(id)
+for(j in v2) {
+  new_var_train <- train.new %>%
+    select_('id', j, 'cat80') %>%
+    setNames(c('id', 'old_var', 'cat80')) %>%
+    mutate(new_cat = paste0(old_var, cat80)) %>%
+    select(id, new_cat) %>%
+    setNames(c('id', paste0('new_cat', i)))
+  
+  new_var_test <- test.new %>%
+    select_('id', j, 'cat80') %>%
+    setNames(c('id', 'old_var', 'cat80')) %>%
+    mutate(new_cat = paste0(old_var, cat80)) %>%
+    select(id, new_cat) %>%
+    setNames(c('id', paste0('new_cat', i)))
+  
+  new.cat.train <- new.cat.train %>%
+    inner_join(new_var_train)
+  new.cat.test <- new.cat.test %>%
+    inner_join(new_var_test)
+  
+  i = i + 1
+}
+
+train.new <- train.new %>%
+  select(id, contains('cat')) %>%
+  inner_join(new.cat.train)
+test.new <- test.new %>%
+  select(id, contains('cat')) %>%
+  inner_join(new.cat.test)
+
+#all.cat.vars <- train.new %>%
+#  select(contains('cat'))
+all.cat.vars <- train %>%
+  select(contains('cat'))
+
+#setdiff(names(all.cat.vars), c('cat79', 'cat80', 'cat101'))
+v3 <- setdiff(names(all.cat.vars), c('cat101'))
+
+new.cat.train <- train %>% select(id)
+new.cat.test <- test %>% select(id)
+for(j in v3) {
+  new_var_train <- train.new %>%
+    select_('id', j, 'cat101') %>%
+    setNames(c('id', 'old_var', 'cat101')) %>%
+    mutate(new_cat = paste0(old_var, cat101)) %>%
+    select(id, new_cat) %>%
+    setNames(c('id', paste0('new_cat', i)))
+  
+  new_var_test <- test.new %>%
+    select_('id', j, 'cat101') %>%
+    setNames(c('id', 'old_var', 'cat101')) %>%
+    mutate(new_cat = paste0(old_var, cat101)) %>%
+    select(id, new_cat) %>%
+    setNames(c('id', paste0('new_cat', i)))
+  
+  new.cat.train <- new.cat.train %>%
+    inner_join(new_var_train)
+  new.cat.test <- new.cat.test %>%
+    inner_join(new_var_test)
+  
+  i = i + 1
+}
+
+train.new <- train.new %>%
+  select(id, contains('cat')) %>%
+  inner_join(new.cat.train)
+test.new <- test.new %>%
+  select(id, contains('cat')) %>%
+  inner_join(new.cat.test)
+
+###########################################
+
+train <- train.new %>%
+  inner_join(train %>%
+               select(id, starts_with('cont'), loss))
+
+test <- test.new %>%
+  inner_join(test %>%
+               select(id, starts_with('cont')))
+
+all.cat.vars <- train %>%
+  select(contains('cat'))
+
 cat.table <- NULL
 for(i in names(all.cat.vars)) {
   
